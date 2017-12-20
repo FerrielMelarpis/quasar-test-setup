@@ -1,5 +1,3 @@
-process.env.NODE_ENV = 'development'
-
 require('colors')
 
 var
@@ -71,16 +69,30 @@ app.use(staticsPath, express.static('./src/statics'))
 // try to serve Cordova statics for Play App
 app.use(express.static(env.platform.cordovaAssets))
 
-module.exports = app.listen(port, function (err) {
+console.log('> Starting server...')
+var ready = new Promise(function (resolve) {
+  devMiddleware.waitUntilValid(function () {
+    console.log('> Listening at ' + uri + '\n')
+    // open only on dev env
+    if (config.dev.openBrowser && process.env.NODE_ENV === 'development') {
+      opn(uri)
+    }
+
+    resolve()
+  })
+})
+
+var server = app.listen(port, function (err) {
   if (err) {
     console.log(err)
     process.exit(1)
   }
-
-  // open browser if set so in /config/index.js
-  if (config.dev.openBrowser) {
-    devMiddleware.waitUntilValid(function () {
-      opn(uri)
-    })
-  }
 })
+
+module.exports = {
+  server,
+  ready,
+  close: function () {
+    server.close()
+  }
+}
